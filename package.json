@@ -1,0 +1,27 @@
+{
+  "name": "mumusic",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.0",
+    "axios": "^1.6.0",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "ffmpeg-static": "^5.2.0",
+    "node-fetch": "^3.3.2",
+    "nodemon": "^3.0.1",
+    "sodium-native": "^4.0.4"
+  },
+  "devDependencies": {
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2"
+  }
+}
