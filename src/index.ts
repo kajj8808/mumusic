@@ -35,7 +35,7 @@ function playMessageFactory(track: Track) {
     .setThumbnail(track.thumbnail)
     .setTimestamp()
     .setURL(track.url)
-    .setDescription(`${track.description} (${track.source.length})`);
+    .setDescription(`${track.description} (${track.duration})`);
   // buttons [https://discordjs.guide/message-components/buttons.html#button-styles]
   const stopButton = new ButtonBuilder()
     .setCustomId("stop")
