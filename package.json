@@ -1,0 +1,28 @@
+{
+  "name": "mumusic",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "tsx": "^4.9.0"
+  },
+  "dependencies": {
+    "@discord-player/extractor": "^4.4.7",
+    "@discordjs/opus": "^0.9.0",
+    "@discordjs/voice": "^0.16.1",
+    "@distube/ytdl-core": "^4.13.3",
+    "discord-player": "^6.6.8",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "fast-average-color-node": "^3.0.0",
+    "ffmpeg-static": "^5.2.0",
+    "googleapis": "^136.0.0",
+    "sodium-native": "^4.1.1"
+  }
+}
