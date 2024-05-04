@@ -8,7 +8,7 @@ export async function searchYoutubeUrl(query: string) {
       q: query,
       maxResults: 5,
       part: ["snippet"],
-      type: ["video"],
+      type: ["video", "music"],
       topicId: "/m/04rlf",
       videoDuration: "any",
       order: "relevance",

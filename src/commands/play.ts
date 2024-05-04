@@ -27,7 +27,7 @@ export async function playMessageEmbedFactory(metadata: IMetaData) {
   const playEmbed = new EmbedBuilder()
     .setColor(prominetHexCode)
     .setTitle(metadata.title)
-    .setURL(`https://www.youtube.com/watch?${metadata.id}`)
+    .setURL(`https://www.youtube.com/watch?v=${metadata.id}`)
     .setImage(metadata.thumbnail.url)
     .addFields(
       { name: "time", value: metadata.durationFormatted, inline: true },
@@ -57,6 +57,7 @@ export async function playHandler(interaction: Interaction) {
       message.edit("Error: youtube url doesn't exist");
       return;
     }
+
     await player.play(voiceChannel, youtubeUrl, {
       nodeOptions: { metadata: { message } },
     });
