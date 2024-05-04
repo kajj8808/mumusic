@@ -27,7 +27,8 @@ function eventsInitial() {
     const message = queue.metadata.message as Message;
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
-    message.edit({
+
+    await message.edit({
       content: null,
       embeds: [messageEmbed],
       components: [playRow],
@@ -37,16 +38,29 @@ function eventsInitial() {
   global.player?.events.on("audioTrackAdd", async (queue, track) => {
     if (queue.isPlaying()) {
       const message = queue.metadata.message as Message;
-      const addedMessage = message.channel.send(`added for ${track.title} 🎉`);
+      const metadata = queue.metadata as IMetaData;
+      const messageEmbed = await playMessageEmbedFactory(metadata);
+      const addedMessage = await message.channel.send(
+        `added for ${track.title} 🎉`
+      );
+
       await sleep(10);
-      (await addedMessage).delete();
+      addedMessage.delete();
+
+      await message.edit({
+        content: null,
+        embeds: [messageEmbed],
+        components: [playRow],
+      });
     }
   });
 
   global.player?.events.on("playerSkip", async (queue, track) => {
     const message = queue.metadata.message as Message;
-    const skipedMessage = message.channel.send(`skiped for ${track.title} 🔥`);
+    const skipedMessage = await message.channel.send(
+      `skiped for ${track.title} 🔥`
+    );
     await sleep(10);
-    (await skipedMessage).delete();
+    skipedMessage.delete();
   });
 }
