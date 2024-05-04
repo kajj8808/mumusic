@@ -46,12 +46,6 @@ function eventsInitial() {
 
       await sleep(10);
       addedMessage.delete();
-
-      await message.edit({
-        content: null,
-        embeds: [messageEmbed],
-        components: [playRow],
-      });
     }
   });
 
