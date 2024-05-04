@@ -27,15 +27,19 @@ function eventsInitial() {
     const message = queue.metadata.message as Message;
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
-    message.channel.send({ embeds: [messageEmbed], components: [playRow] });
+    message.edit({ embeds: [messageEmbed], components: [playRow] });
   });
 
   global.player?.events.on("audioTrackAdd", async (queue, track) => {
     if (queue.isPlaying()) {
       const message = queue.metadata.message as Message;
+      const metadata = queue.metadata as IMetaData;
+      const messageEmbed = await playMessageEmbedFactory(metadata);
+
       const addedMessage = message.channel.send(`added for ${track.title} 🎉`);
       await sleep(10);
       (await addedMessage).delete();
+      message.edit({ embeds: [messageEmbed], components: [playRow] });
     }
   });
 

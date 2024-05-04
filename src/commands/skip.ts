@@ -1,4 +1,4 @@
-import { useMainPlayer, useQueue } from "discord-player";
+import { useQueue } from "discord-player";
 import { Guild, Interaction } from "discord.js";
 
 export async function skipHandler(interaction: Interaction) {

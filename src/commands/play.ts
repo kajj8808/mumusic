@@ -15,7 +15,7 @@ import { IMetaData } from "../interfaces";
 const button = new ButtonBuilder()
   .setLabel("skip")
   .setCustomId("skip")
-  .setStyle(ButtonStyle.Success);
+  .setStyle(ButtonStyle.Primary);
 export const playRow = new ActionRowBuilder().addComponents(button) as any;
 
 // message factory
@@ -57,7 +57,6 @@ export async function playHandler(interaction: Interaction) {
       message.edit("Error: youtube url doesn't exist");
       return;
     }
-    message.delete();
     await player.play(voiceChannel, youtubeUrl, {
       nodeOptions: { metadata: { message } },
     });
