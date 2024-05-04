@@ -39,7 +39,11 @@ function eventsInitial() {
       const addedMessage = message.channel.send(`added for ${track.title} 🎉`);
       await sleep(10);
       (await addedMessage).delete();
-      message.edit({ embeds: [messageEmbed], components: [playRow] });
+      message.edit({
+        body: null,
+        embeds: [messageEmbed],
+        components: [playRow],
+      });
     }
   });
 
