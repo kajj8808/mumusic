@@ -36,17 +36,14 @@ function eventsInitial() {
   });
 
   global.player?.events.on("audioTrackAdd", async (queue, track) => {
-    if (queue.isPlaying()) {
-      const message = queue.metadata.message as Message;
-      const metadata = queue.metadata as IMetaData;
-      const messageEmbed = await playMessageEmbedFactory(metadata);
-      const addedMessage = await message.channel.send(
-        `added for ${track.title} 🎉`
-      );
+    const message = queue.metadata.message as Message;
+    await message.edit({ content: null });
+    const addedMessage = await message.channel.send(
+      `added for ${track.title} 🎉`
+    );
 
-      await sleep(10);
-      addedMessage.delete();
-    }
+    await sleep(10);
+    addedMessage.delete();
   });
 
   global.player?.events.on("playerSkip", async (queue, track) => {
