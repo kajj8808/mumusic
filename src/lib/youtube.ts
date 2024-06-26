@@ -30,6 +30,9 @@ export async function searchYoutubeUrl(query: string) {
 }
 
 export async function searchYoutubeListUrl(query: string): Promise<any> {
+  if (query === "") {
+    return [];
+  }
   try {
     const result = await youtube.search.list({
       q: query,
@@ -47,10 +50,9 @@ export async function searchYoutubeListUrl(query: string): Promise<any> {
       }
       return true;
     });
-
     return notMVTitles?.map((video) => ({
       name: video.snippet?.title,
-      value: video.id?.videoId,
+      url: `https://www.youtube.com/watch?v=${video.id?.videoId}`,
     }));
   } catch (error) {
     console.error(error);

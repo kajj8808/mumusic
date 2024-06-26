@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import discord, { ApplicationCommandOptionType } from "discord.js";
+import discord from "discord.js";
 import { playerLoad } from "./lib/player";
 import { playHandler } from "./commands/play";
 import { skipHandler } from "./commands/skip";
