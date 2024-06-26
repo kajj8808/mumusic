@@ -6,6 +6,7 @@ import { playHandler } from "./commands/play";
 import { skipHandler } from "./commands/skip";
 import { discordCommandInit } from "./lib/discord";
 import db from "./lib/db";
+import { searchYoutubeListUrl } from "./lib/youtube";
 
 const client = new discord.Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -14,16 +15,17 @@ const client = new discord.Client({
 client.on("interactionCreate", async (interaction) => {
   if (interaction.isAutocomplete()) {
     const focusedValue = interaction.options.getFocused();
-
-    const songs = await db.youtubeMusic.findMany({
+    const searchSongs = await searchYoutubeListUrl(focusedValue);
+    const prevSongs = await db.youtubeMusic.findMany({
       where: {
         name: {
           contains: focusedValue,
           mode: "insensitive",
         },
       },
-      take: 5,
+      take: 2,
     });
+    const songs = [...searchSongs, ...prevSongs];
     await interaction.respond(
       songs.map((song) => ({ name: song.name, value: song.url }))
     );

@@ -28,3 +28,32 @@ export async function searchYoutubeUrl(query: string) {
     return null;
   }
 }
+
+export async function searchYoutubeListUrl(query: string): Promise<any> {
+  try {
+    const result = await youtube.search.list({
+      q: query,
+      maxResults: 3,
+      part: ["snippet"],
+      type: ["video", "music"],
+      topicId: "/m/04rlf",
+      videoDuration: "any",
+      order: "relevance",
+    });
+
+    const notMVTitles = result.data.items?.filter((item) => {
+      if (item.snippet?.title?.toLocaleLowerCase().includes("official")) {
+        return false;
+      }
+      return true;
+    });
+
+    return notMVTitles?.map((video) => ({
+      name: video.snippet?.title,
+      value: video.id?.videoId,
+    }));
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}
