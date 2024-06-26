@@ -15,9 +15,6 @@ export async function searchYoutubeUrl(query: string) {
     });
 
     const notMVTitles = result.data.items?.filter((item) => {
-      if (item.snippet?.title?.includes("MV")) {
-        return false;
-      }
       if (item.snippet?.title?.toLocaleLowerCase().includes("official")) {
         return false;
       }

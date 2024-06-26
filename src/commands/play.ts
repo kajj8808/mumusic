@@ -7,10 +7,14 @@ import {
   EmbedBuilder,
   GuildMember,
   Interaction,
+  REST,
+  Routes,
+  SlashCommandBuilder,
 } from "discord.js";
 import { searchYoutubeUrl } from "../lib/youtube";
 import { getProminentColorHexCode } from "../lib/utiles";
 import { IMetaData } from "../interfaces";
+import { reseller } from "googleapis/build/src/apis/reseller";
 
 const button = new ButtonBuilder()
   .setLabel("skip")
@@ -65,3 +69,14 @@ export async function playHandler(interaction: Interaction) {
     interaction.editReply("First, you must be on a voice channel.");
   }
 }
+
+export const data = new SlashCommandBuilder()
+  .setName("play")
+  .setDescription("add song name or youtube url")
+  .addStringOption((option) =>
+    option
+      .setName("term")
+      .setDescription("song name or youtube url")
+      .setRequired(true)
+      .setAutocomplete(true)
+  );

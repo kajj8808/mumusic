@@ -1,15 +1,24 @@
 import "dotenv/config";
 
-import discord from "discord.js";
+import discord, { ApplicationCommandOptionType } from "discord.js";
 import { playerLoad } from "./lib/player";
 import { playHandler } from "./commands/play";
 import { skipHandler } from "./commands/skip";
+import { discordCommandInit } from "./lib/discord";
 
 const client = new discord.Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
 });
 
 client.on("interactionCreate", async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    interaction.respond([
+      {
+        name: "command",
+        value: "name",
+      },
+    ]);
+  }
   if (interaction.isCommand()) {
     await interaction.deferReply();
     switch (interaction.commandName) {
@@ -34,4 +43,5 @@ client.on("ready", async () => {
   await playerLoad(client);
 });
 
+discordCommandInit();
 client.login(process.env.DISCORD_BOT_TOKEN);
