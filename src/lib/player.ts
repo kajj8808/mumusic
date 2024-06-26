@@ -27,6 +27,7 @@ function eventsInitial() {
     const message = queue.metadata.message as Message;
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
+
     const isVaild = !Boolean(
       await db.youtubeMusic.findUnique({
         where: {
@@ -39,6 +40,7 @@ function eventsInitial() {
         data: {
           name: metadata.title,
           url: track.url,
+          requestBy: message.member?.id ? message.member?.id : "Anon",
         },
       });
     }
