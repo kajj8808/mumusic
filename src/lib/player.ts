@@ -3,7 +3,7 @@ import { Client, Message } from "discord.js";
 import { IMetaData } from "../interfaces";
 import { playMessageEmbedFactory, playRow } from "../commands/play";
 import { sleep } from "./utiles";
-
+import db from "./db";
 declare global {
   var player: Player | undefined;
 }
@@ -27,6 +27,21 @@ function eventsInitial() {
     const message = queue.metadata.message as Message;
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
+    const isVaild = !Boolean(
+      await db.youtubeMusic.findUnique({
+        where: {
+          name: metadata.title,
+        },
+      })
+    );
+    if (isVaild) {
+      await db.youtubeMusic.create({
+        data: {
+          name: metadata.title,
+          url: track.url,
+        },
+      });
+    }
 
     await message.edit({
       content: null,

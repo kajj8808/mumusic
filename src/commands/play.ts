@@ -14,7 +14,6 @@ import {
 import { searchYoutubeUrl } from "../lib/youtube";
 import { getProminentColorHexCode } from "../lib/utiles";
 import { IMetaData } from "../interfaces";
-import { reseller } from "googleapis/build/src/apis/reseller";
 
 const button = new ButtonBuilder()
   .setLabel("skip")
@@ -56,7 +55,13 @@ export async function playHandler(interaction: Interaction) {
     const message = await interaction.editReply({
       content: "search for youtube url ...",
     });
-    const youtubeUrl = await searchYoutubeUrl(term);
+
+    let youtubeUrl;
+    if (term.includes("https://www.youtube.com/")) {
+      youtubeUrl = term;
+    } else {
+      youtubeUrl = await searchYoutubeUrl(term);
+    }
     if (!youtubeUrl) {
       message.edit("Error: youtube url doesn't exist");
       return;

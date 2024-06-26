@@ -5,6 +5,7 @@ import { playerLoad } from "./lib/player";
 import { playHandler } from "./commands/play";
 import { skipHandler } from "./commands/skip";
 import { discordCommandInit } from "./lib/discord";
+import db from "./lib/db";
 
 const client = new discord.Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -12,12 +13,20 @@ const client = new discord.Client({
 
 client.on("interactionCreate", async (interaction) => {
   if (interaction.isAutocomplete()) {
-    interaction.respond([
-      {
-        name: "command",
-        value: "name",
+    const focusedValue = interaction.options.getFocused();
+
+    const songs = await db.youtubeMusic.findMany({
+      where: {
+        name: {
+          contains: focusedValue,
+          mode: "insensitive",
+        },
       },
-    ]);
+      take: 5,
+    });
+    await interaction.respond(
+      songs.map((song) => ({ name: song.name, value: song.url }))
+    );
   }
   if (interaction.isCommand()) {
     await interaction.deferReply();
