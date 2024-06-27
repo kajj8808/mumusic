@@ -34,7 +34,11 @@ export async function playMessageEmbedFactory(metadata: IMetaData) {
     .setImage(metadata.thumbnail.url)
     .addFields(
       { name: "time", value: metadata.durationFormatted, inline: true },
-      { name: "uploaded at", value: metadata.uploadedAt, inline: true }
+      {
+        name: "uploaded at",
+        value: metadata.uploadedAt || "null",
+        inline: true,
+      }
     )
     .setTimestamp()
     .setFooter({

@@ -25,7 +25,6 @@ client.on("interactionCreate", async (interaction) => {
       },
       take: 2,
     });
-    console.log(searchSongs);
     const songs = [...searchSongs, ...prevSongs];
     await interaction.respond(
       songs.map((song) => ({ name: song.name, value: song.url }))
