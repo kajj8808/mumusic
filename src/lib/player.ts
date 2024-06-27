@@ -4,6 +4,8 @@ import { IMetaData } from "../interfaces";
 import { playMessageEmbedFactory, playRow } from "../commands/play";
 import { sleep } from "./utiles";
 import db from "./db";
+import { togglePlayedChannel } from "../global/playedServer";
+
 declare global {
   var player: Player | undefined;
 }
@@ -24,6 +26,8 @@ export async function playerLoad(client: Client) {
 
 function eventsInitial() {
   global.player?.events.on("playerStart", async (queue, track) => {
+    const channelId = queue.channel?.id;
+    togglePlayedChannel(channelId!);
     const message = queue.metadata.message as Message;
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
@@ -75,6 +79,7 @@ function eventsInitial() {
   });
 
   global.player?.events.on("emptyQueue", async (queue) => {
-    console.log(queue);
+    const channelId = queue.channel?.id;
+    togglePlayedChannel(channelId!);
   });
 }

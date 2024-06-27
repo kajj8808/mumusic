@@ -24,6 +24,9 @@ client.on("interactionCreate", async (interaction) => {
         },
       },
       take: 2,
+      orderBy: {
+        id: "desc",
+      },
     });
     const songs = [...searchSongs, ...prevSongs];
     await interaction.respond(

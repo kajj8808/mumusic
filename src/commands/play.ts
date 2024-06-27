@@ -14,6 +14,7 @@ import {
 import { searchYoutubeUrl } from "../lib/youtube";
 import { getProminentColorHexCode } from "../lib/utiles";
 import { IMetaData } from "../interfaces";
+import { checkPlayedChannel } from "../global/playedServer";
 
 const button = new ButtonBuilder()
   .setLabel("skip")
@@ -69,6 +70,12 @@ export async function playHandler(interaction: Interaction) {
     if (!youtubeUrl) {
       message.edit("Error: youtube url doesn't exist");
       return;
+    }
+
+    const channelId = voiceChannel.id;
+    const isPlaying = checkPlayedChannel(channelId!);
+    if (isPlaying) {
+      message.delete();
     }
 
     await player.play(voiceChannel, youtubeUrl, {

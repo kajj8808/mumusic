@@ -1,4 +1,5 @@
 import { getAverageColor } from "fast-average-color-node";
+import { serverList } from "../global/playedServer";
 
 export async function sleep(second: number) {
   return new Promise((resolve) => {
