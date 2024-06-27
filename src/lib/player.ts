@@ -73,4 +73,8 @@ function eventsInitial() {
     await sleep(10);
     skipedMessage.delete();
   });
+
+  global.player?.events.on("emptyQueue", async (queue) => {
+    console.log(queue);
+  });
 }

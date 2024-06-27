@@ -34,7 +34,18 @@ export async function searchYoutubeListUrl(query: string): Promise<any> {
     return [];
   }
   try {
-    const result = await youtube.search.list({
+    const player = global.player;
+    const searchResult = await player?.search(query, {
+      searchEngine: "youtubeSearch",
+    });
+    const notMVTitles = searchResult?.tracks.filter((item) => {
+      if (item.title.toLocaleLowerCase().includes("official")) {
+        return false;
+      }
+      return true;
+    });
+
+    /*  const result = await youtube.search.list({
       q: query,
       maxResults: 3,
       part: ["snippet"],
@@ -42,7 +53,7 @@ export async function searchYoutubeListUrl(query: string): Promise<any> {
       topicId: "/m/04rlf",
       videoDuration: "any",
       order: "relevance",
-    });
+    }); 
 
     const notMVTitles = result.data.items?.filter((item) => {
       if (item.snippet?.title?.toLocaleLowerCase().includes("official")) {
@@ -53,7 +64,13 @@ export async function searchYoutubeListUrl(query: string): Promise<any> {
     return notMVTitles?.map((video) => ({
       name: video.snippet?.title,
       url: `https://www.youtube.com/watch?v=${video.id?.videoId}`,
-    }));
+    }));*/
+    return notMVTitles
+      ?.map((video) => ({
+        name: video.title,
+        url: video.url,
+      }))
+      .slice(0, 4);
   } catch (error) {
     console.error(error);
     return null;
