@@ -52,9 +52,11 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-client.on("ready", async () => {
+/// 서버는 열리고 있는 ? 설치된거 받아올수 있게
+client.on("ready", async (data) => {
   console.log(`${client.user?.username} is online.`);
   await playerLoad(client);
+  console.log(data);
 });
 
 discordCommandInit();

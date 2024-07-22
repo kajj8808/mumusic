@@ -44,7 +44,7 @@ function eventsInitial() {
         data: {
           name: metadata.title,
           url: track.url,
-          requestBy: message.member?.id ? message.member?.id : "Anon",
+          requestBy: message.member?.user.id ? message.member?.user.id : "Anon",
         },
       });
     }
