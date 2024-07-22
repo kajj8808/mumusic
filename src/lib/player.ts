@@ -39,13 +39,15 @@ function eventsInitial() {
         },
       })
     );
+
     if (isVaild) {
-      console.log(message);
       await db.youtubeMusic.create({
         data: {
           name: metadata.title,
           url: track.url,
-          requestBy: track.requestedBy?.id ? track.requestedBy.id : "Anon",
+          requestBy: message.interaction?.user.id
+            ? message.interaction?.user.id
+            : "Anon",
         },
       });
     }
