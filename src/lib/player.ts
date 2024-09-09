@@ -32,6 +32,13 @@ function eventsInitial() {
     const metadata = track.metadata as IMetaData;
     const messageEmbed = await playMessageEmbedFactory(metadata);
 
+    if (!messageEmbed) {
+      await message.edit({
+        content: "뭔가 뭔가 문제가 생김...",
+      });
+      return;
+    }
+
     const isVaild = !Boolean(
       await db.youtubeMusic.findUnique({
         where: {

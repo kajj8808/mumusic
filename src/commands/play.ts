@@ -25,29 +25,34 @@ export const playRow = new ActionRowBuilder().addComponents(button) as any;
 
 // message factory
 export async function playMessageEmbedFactory(metadata: IMetaData) {
-  const prominetHexCode = (await getProminentColorHexCode(
-    metadata.thumbnail.url
-  )) as ColorResolvable;
+  try {
+    const prominetHexCode = (await getProminentColorHexCode(
+      metadata.thumbnail.url
+    )) as ColorResolvable;
 
-  const playEmbed = new EmbedBuilder()
-    .setColor(prominetHexCode)
-    .setTitle(metadata.title)
-    .setURL(`https://www.youtube.com/watch?v=${metadata.id}`)
-    .setImage(metadata.thumbnail.url)
-    .addFields(
-      { name: "time", value: metadata.durationFormatted, inline: true },
-      {
-        name: "uploaded at",
-        value: metadata.uploadedAt || "null",
-        inline: true,
-      }
-    )
-    .setTimestamp()
-    .setFooter({
-      text: metadata.channel.name,
-      iconURL: metadata.channel.icon.url,
-    });
-  return playEmbed;
+    const playEmbed = new EmbedBuilder()
+      .setColor(prominetHexCode)
+      .setTitle(metadata.title)
+      .setURL(`https://www.youtube.com/watch?v=${metadata.id}`)
+      .setImage(metadata.thumbnail.url)
+      .addFields(
+        { name: "time", value: metadata.durationFormatted, inline: true },
+        {
+          name: "uploaded at",
+          value: metadata.uploadedAt || "null",
+          inline: true,
+        }
+      )
+      .setTimestamp()
+      .setFooter({
+        text: metadata.channel.name,
+        iconURL: metadata.channel.icon.url,
+      });
+    return playEmbed;
+  } catch (error) {
+    console.error(error);
+    return undefined;
+  }
 }
 
 export async function playHandler(interaction: Interaction) {
