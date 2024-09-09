@@ -15,6 +15,7 @@ import { searchYoutubeUrl } from "../lib/youtube";
 import { getProminentColorHexCode } from "../lib/utiles";
 import { IMetaData } from "../interfaces";
 import { checkPlayedChannel } from "../global/playedServer";
+import { YoutubeiExtractor } from "discord-player-youtubei";
 
 const button = new ButtonBuilder()
   .setLabel("skip")
@@ -52,6 +53,7 @@ export async function playMessageEmbedFactory(metadata: IMetaData) {
 export async function playHandler(interaction: Interaction) {
   if (!interaction.isCommand()) return;
   const player = useMainPlayer();
+  player.extractors.register(YoutubeiExtractor, {});
   const voiceChannel = (interaction.member as GuildMember).voice.channel;
 
   if (voiceChannel) {
