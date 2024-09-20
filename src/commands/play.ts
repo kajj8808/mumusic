@@ -11,43 +11,45 @@ import {
   Routes,
   SlashCommandBuilder,
 } from "discord.js";
-import { searchYoutubeUrl } from "../lib/youtube";
+import { searchYoutubeMusic } from "../lib/youtube";
 import { getProminentColorHexCode } from "../lib/utiles";
-import { IMetaData } from "../interfaces";
 import { checkPlayedChannel } from "../global/playedServer";
 import { YoutubeiExtractor } from "discord-player-youtubei";
+import { TrackInfo } from "../interfaces";
 
 const button = new ButtonBuilder()
   .setLabel("skip")
   .setCustomId("skip")
-  .setStyle(ButtonStyle.Primary);
+  .setStyle(ButtonStyle.Danger);
 export const playRow = new ActionRowBuilder().addComponents(button) as any;
 
 // message factory
-export async function playMessageEmbedFactory(metadata: IMetaData) {
+export async function playMessageEmbedFactory(track: TrackInfo) {
   try {
     const prominetHexCode = (await getProminentColorHexCode(
-      metadata.thumbnail.url
+      track.thumbnail
     )) as ColorResolvable;
 
     const playEmbed = new EmbedBuilder()
       .setColor(prominetHexCode)
-      .setTitle(metadata.title)
-      .setURL(`https://www.youtube.com/watch?v=${metadata.id}`)
-      .setImage(metadata.thumbnail.url)
-      .addFields(
-        { name: "time", value: metadata.durationFormatted, inline: true },
-        {
-          name: "uploaded at",
-          value: metadata.uploadedAt || "null",
-          inline: true,
-        }
-      )
-      .setTimestamp()
-      .setFooter({
+      .setTitle(track.cleanTitle)
+      .setURL(track.url)
+      .setImage(track.thumbnail)
+      .addFields({
+        name: "duration",
+        value: track.duration,
+        inline: true,
+      })
+      .addFields({
+        name: "views",
+        value: track.views.toString(),
+        inline: true,
+      })
+      .setTimestamp();
+    /* .setFooter({
         text: metadata.channel.name,
-        iconURL: metadata.channel.icon.url,
-      });
+        iconURL: metadata.,
+      }); */
     return playEmbed;
   } catch (error) {
     console.error(error);
@@ -68,14 +70,10 @@ export async function playHandler(interaction: Interaction) {
       content: "search for youtube url ...",
     });
 
-    let youtubeUrl;
-    if (term.includes("https://www.youtube.com/")) {
-      youtubeUrl = term;
-    } else {
-      youtubeUrl = await searchYoutubeUrl(term);
-    }
-    if (!youtubeUrl) {
-      message.edit("Error: youtube url doesn't exist");
+    const musicInfo = await searchYoutubeMusic(term);
+
+    if (!musicInfo) {
+      message.edit("Error: youtube info doesn't exist");
       return;
     }
 
@@ -85,9 +83,13 @@ export async function playHandler(interaction: Interaction) {
       message.delete();
     }
 
-    await player.play(voiceChannel, youtubeUrl, {
-      nodeOptions: { metadata: { message } },
-    });
+    await player.play(
+      voiceChannel,
+      `https://www.youtube.com/watch?v=${musicInfo.id?.videoId}`,
+      {
+        nodeOptions: { metadata: { message, musicInfo } },
+      }
+    );
   } else {
     interaction.editReply("First, you must be on a voice channel.");
   }

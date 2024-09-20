@@ -2,7 +2,7 @@ import { google } from "googleapis";
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const youtube = google.youtube({ version: "v3", auth: API_KEY });
 
-export async function searchYoutubeUrl(query: string) {
+export async function searchYoutubeMusic(query: string) {
   try {
     const result = await youtube.search.list({
       q: query,
@@ -14,15 +14,11 @@ export async function searchYoutubeUrl(query: string) {
       order: "relevance",
     });
 
-    const notMVTitles = result.data.items?.filter((item) => {
-      if (item.snippet?.title?.toLocaleLowerCase().includes("official")) {
-        return false;
-      }
-      return true;
-    });
-
-    const videoId = notMVTitles![0].id?.videoId;
-    return `https://www.youtube.com/watch?v=${videoId}`;
+    if (result.data.items) {
+      return result.data.items[0];
+    } else {
+      return null;
+    }
   } catch (error) {
     console.error(error);
     return null;

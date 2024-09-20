@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType } from "discord.js";
+import { ApplicationCommandOptionType, Message, TextChannel } from "discord.js";
 
 export interface ICommand {
   name: string;
@@ -13,25 +13,20 @@ export interface ICommand {
   ];
 }
 
-export interface IMetaData {
+export interface TrackInfo {
   id: string;
   title: string;
-  thumbnail: {
-    id: string;
-    width: number;
-    height: number;
-    url: string;
-  };
-  channel: {
-    name: string;
-    icon: {
-      url: string;
-      width: number;
-      height: number;
-    };
-    subscribers: string;
-  };
+  author: string;
+  url: string;
+  thumbnail: string;
+  duration: string;
   views: number;
-  uploadedAt: string;
-  durationFormatted: string;
+  description: string;
+  cleanTitle: string;
+}
+
+export interface TrackRow {
+  source: "youtube" | "spotify";
+  duration_ms: number;
+  duration: string;
 }

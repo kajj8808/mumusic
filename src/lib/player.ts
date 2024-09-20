@@ -1,10 +1,10 @@
 import { Player } from "discord-player";
 import { Client, Message } from "discord.js";
-import { IMetaData } from "../interfaces";
 import { playMessageEmbedFactory, playRow } from "../commands/play";
 import { sleep } from "./utiles";
 import db from "./db";
 import { togglePlayedChannel } from "../global/playedServer";
+import { YoutubeiExtractor } from "discord-player-youtubei";
 
 declare global {
   var player: Player | undefined;
@@ -15,12 +15,16 @@ export async function playerLoad(client: Client) {
     const player = new Player(client, {
       ytdlOptions: {
         quality: "highestaudio",
-        highWaterMark: 1 << 27,
+        highWaterMark: 1 << 28,
       },
     });
+    await player.extractors.register(YoutubeiExtractor, {
+      authentication: process.env.YOUTUBE_ACCESS_TOKEN,
+    });
+    await player.extractors.loadDefault();
+
     global.player = player;
     eventsInitial();
-    await global.player.extractors.loadDefault();
   }
 }
 
@@ -29,8 +33,8 @@ function eventsInitial() {
     const channelId = queue.channel?.id;
     togglePlayedChannel(channelId!);
     const message = queue.metadata.message as Message;
-    const metadata = track.metadata as IMetaData;
-    const messageEmbed = await playMessageEmbedFactory(metadata);
+    // const musicInfo = queue.metadata.musicInfo as youtube_v3.Schema$SearchResult;
+    const messageEmbed = await playMessageEmbedFactory(track);
 
     if (!messageEmbed) {
       await message.edit({
@@ -42,7 +46,7 @@ function eventsInitial() {
     const isVaild = !Boolean(
       await db.youtubeMusic.findUnique({
         where: {
-          name: metadata.title,
+          name: track.title,
         },
       })
     );
@@ -50,7 +54,7 @@ function eventsInitial() {
     if (isVaild) {
       await db.youtubeMusic.create({
         data: {
-          name: metadata.title,
+          name: track.title,
           url: track.url,
           requestBy: message.interaction?.user.id
             ? message.interaction?.user.id
@@ -69,11 +73,10 @@ function eventsInitial() {
   global.player?.events.on("audioTrackAdd", async (queue, track) => {
     if (queue.isPlaying()) {
       const message = queue.metadata.message as Message;
-      const metadata = queue.metadata as IMetaData;
-      const addedMessage = await message.channel.send(
+      const messageChannel = message.channel as any;
+      const addedMessage = await messageChannel.send(
         `added for ${track.title} 🎉`
       );
-
       await sleep(10);
       addedMessage.delete();
     }
@@ -81,7 +84,8 @@ function eventsInitial() {
 
   global.player?.events.on("playerSkip", async (queue, track) => {
     const message = queue.metadata.message as Message;
-    const skipedMessage = await message.channel.send(
+    const messageChannel = message.channel as any;
+    const skipedMessage = await messageChannel.send(
       `skiped for ${track.title} 🔥`
     );
     await sleep(10);
