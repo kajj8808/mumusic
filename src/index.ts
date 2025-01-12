@@ -1,14 +1,5 @@
 import { joinVoiceChannel } from "@discordjs/voice";
 
-/* 
-const connection = joinVoiceChannel(
-    {
-        channelId: "",
-        guildId:"",
-        adapterCreator: ChannelMergerNode.
-    }
-) */
-
 import { Client } from "discord.js";
 import { discordCommandInit } from "./commands/init";
 import { play } from "./commands/play";
