@@ -11,12 +11,11 @@ import path from "path";
 import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
+import { AUDIO_DIR } from "../constants";
 
 const player = createAudioPlayer();
 
-player.on(AudioPlayerStatus.Playing, () => {
-  // console.log("pppll~~~");
-});
+player.on(AudioPlayerStatus.Playing, () => {});
 
 player.on("error", (error) => {
   console.error(`Audio player error: ${error}`);
@@ -25,6 +24,31 @@ player.on("error", (error) => {
 player.on("stateChange", (oldState, newState) => {
   console.log(`Player state changed: ${oldState.status} -> ${newState.status}`);
 });
+
+async function checkAudioExists(videoId: string) {
+  const audioFiles = fs.readdirSync(AUDIO_DIR);
+  return audioFiles.some((file) => file.includes(videoId));
+}
+
+async function convertVideoToAudio(videoPath: string, audioPath: string) {
+  return await new Promise((resolve, reject) => {
+    ffmpeg()
+      .input(videoPath)
+      .output(audioPath)
+      .outputOption("-c:a copy")
+      .outputOption("-vn")
+      .on("end", () => {
+        resolve(true);
+      })
+      .on("error", (error) => {
+        reject({
+          name: "convertVideoToAudio error",
+          error: error,
+        });
+      })
+      .run();
+  });
+}
 
 export function play(interaction: Interaction) {
   if (!interaction.inGuild()) {
@@ -53,25 +77,29 @@ export function play(interaction: Interaction) {
     adapterCreator: guild.voiceAdapterCreator,
   });
 
+  console.log(connection.state);
+
   connection.on(VoiceConnectionStatus.Ready, async () => {
     const videoId = ytdl.getVideoID(
       "https://www.youtube.com/watch?v=Ju9OLNOBxeg"
     );
-    const stream = ytdl("https://www.youtube.com/watch?v=Ju9OLNOBxeg", {
-      filter: "audio",
-    });
 
-    const filePath = path.join(
-      __dirname,
-      "../../sample/audio/",
-      `${videoId}.mp4`
-    );
-    const writeStream = fs.createWriteStream(filePath);
-    stream.pipe(writeStream);
+    const audioExists = await checkAudioExists(videoId);
+    const audioFilePath = path.join(AUDIO_DIR, `${videoId}.mp3`);
 
-    await new Promise((resolve) => writeStream.on("finish", resolve));
+    if (!audioExists) {
+      const stream = ytdl("https://www.youtube.com/watch?v=Ju9OLNOBxeg", {
+        filter: "audio",
+      });
+      const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
+      const writeStream = fs.createWriteStream(videoFilePath);
+      stream.pipe(writeStream);
+      await new Promise((resolve) => writeStream.on("finish", resolve));
+      await convertVideoToAudio(videoFilePath, audioFilePath);
+    }
 
-    const audioResource = createAudioResource(stream);
+    const audioStream = fs.createReadStream(audioFilePath);
+    const audioResource = createAudioResource(audioStream);
     player.play(audioResource);
     connection.subscribe(player);
   });
