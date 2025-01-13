@@ -13,7 +13,6 @@ import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
-import { resolve } from "bun";
 
 interface AudioTrack {
   channelId: string;

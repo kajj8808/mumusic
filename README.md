@@ -8,6 +8,12 @@ Discord music bot
 - [] 이전 버전에서 일어 났던 문제 해결
   - [] youtube stream이 중간에 중지 되어 노래가 끊키는 문제
   - [] discord interaction이 중지되는 문제
+- [] discord message
+  - [] skip button
+  - [] stop button
+  - [] list button ( queue에 있는 음악 )
+  - [] 각각 error에 대한 message
+  - [] 로딩에 대한 message ( 가능하면 처리 과정도 포함. )
 
 ## Commads
 
