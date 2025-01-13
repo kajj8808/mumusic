@@ -13,7 +13,7 @@ Discord music bot
   - [] stop button
   - [] list button ( queue에 있는 음악 )
   - [] 각각 error에 대한 message
-  - [] 로딩에 대한 message ( 가능하면 처리 과정도 포함. )
+  - [] 로딩에 대한 message ( 가능하면 처리 과정도 포함 + 이전 메세지를 저장해서 현재 상태를 보여줄수 있게 )
 
 ## Commads
 
