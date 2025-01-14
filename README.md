@@ -14,6 +14,7 @@ Discord music bot
   - [] list button ( queue에 있는 음악 )
   - [] 각각 error에 대한 message
   - [] 로딩에 대한 message ( 가능하면 처리 과정도 포함 + 이전 메세지를 저장해서 현재 상태를 보여줄수 있게 )
+  - [] 가능 하다면 플레이어 메세지를 계속 수정하는 방식으로!
 
 ## Commads
 

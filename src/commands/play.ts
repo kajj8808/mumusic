@@ -8,17 +8,33 @@ import {
   VoiceConnection,
   VoiceConnectionStatus,
 } from "@discordjs/voice";
-import { GuildMember, SlashCommandBuilder, type Interaction } from "discord.js";
+import {
+  EmbedBuilder,
+  Guild,
+  GuildMember,
+  SlashCommandBuilder,
+  type GuildTextBasedChannel,
+  type Interaction,
+} from "discord.js";
 import path from "path";
 import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
 
+interface SongInfo {
+  videoTitle: string;
+  videoUrl: string;
+  channelName: string;
+  thumbnail: string;
+  audioPath: string;
+}
+
 interface AudioPlayerState {
   voiceChannelId: string;
-  guildId: string;
-  playList: string[];
+  guild: Guild;
+  textChannel: GuildTextBasedChannel;
+  playList: SongInfo[];
   player: AudioPlayer;
 }
 const audioPlayerStates: AudioPlayerState[] = [];
@@ -40,7 +56,7 @@ async function checkAudioExists(videoId: string) {
 function findAudioPlayer(guildId: string, voiceChannelId: string) {
   return audioPlayerStates.find(
     (audioPlayer) =>
-      audioPlayer.guildId === guildId &&
+      audioPlayer.guild.id === guildId &&
       audioPlayer.voiceChannelId === voiceChannelId
   );
 }
@@ -50,12 +66,12 @@ function getAudioPlayer(guildId: string, voiceChannelId: string) {
   return currentAudioPlayer?.player;
 }
 
-function addSong(guildId: string, voiceChannelId: string, audioPath: string) {
+function addSong(guildId: string, voiceChannelId: string, songInfo: SongInfo) {
   const audioPlayer = findAudioPlayer(guildId, voiceChannelId);
-  audioPlayer?.playList.push(audioPath);
+  audioPlayer?.playList.push(songInfo);
 }
 
-async function playAudio(guildId: string, voiceChannelId: string) {
+async function playSong(guildId: string, voiceChannelId: string) {
   const currentAudioPlayer = findAudioPlayer(guildId, voiceChannelId);
   if (!currentAudioPlayer) {
     console.error("오디오 플레이어를 찾을 수 없습니다.");
@@ -68,17 +84,34 @@ async function playAudio(guildId: string, voiceChannelId: string) {
     return;
   }
 
-  const audioPath = currentAudioPlayer.playList.pop();
-  if (!audioPath) {
+  const songInfo = currentAudioPlayer.playList.pop();
+  if (!songInfo) {
     console.error("재생할 노래가 없습니다.");
     return;
   }
 
+  const playerEmbed = buildPlayerEmbed(songInfo);
+  currentAudioPlayer.textChannel.send({
+    embeds: [playerEmbed],
+  });
+
   const player = currentAudioPlayer.player;
-  const audioStream = fs.createReadStream(audioPath);
+  const audioStream = fs.createReadStream(songInfo.audioPath);
   const audioResource = createAudioResource(audioStream);
   player.play(audioResource);
   connection.subscribe(player);
+}
+
+function getOriginalThumnail(thumbnails: ytdl.thumbnail[]) {
+  let originalWidth = 0;
+  let originalThumnail = "";
+  for (let thumbnail of thumbnails) {
+    if (originalWidth < thumbnail.width) {
+      originalWidth = thumbnail.width;
+      originalThumnail = thumbnail.url;
+    }
+  }
+  return originalThumnail;
 }
 
 async function convertVideoToAudio(videoPath: string, audioPath: string) {
@@ -102,7 +135,7 @@ async function convertVideoToAudio(videoPath: string, audioPath: string) {
         .input(videoPath)
         .output(tempAudioPath)
         .outputOption("-vn")
-        .audioBitrate("96k")
+        .audioBitrate("128k")
         .on("end", () => {
           fs.rmSync(videoPath);
           fs.renameSync(tempAudioPath, audioPath);
@@ -128,14 +161,16 @@ export async function play(interaction: Interaction) {
   if (!interaction.isCommand()) {
     return;
   }
+  let replyResponse = await interaction.deferReply();
 
   const voiceChannel = (interaction.member as GuildMember).voice.channel;
 
   const guild = interaction.guild;
+  // FIXME: query가 url인 상태임.. 여기 수정
   const query = interaction.options.get("query")?.value?.toString()!; // input option이 required임
 
-  if (!voiceChannel || !guild) {
-    console.error(
+  if (!voiceChannel || !guild || !interaction.channel) {
+    replyResponse.edit(
       "play commnad error: channel이나 guild가 없는거 같습니다(?)🤔"
     );
     return;
@@ -145,9 +180,10 @@ export async function play(interaction: Interaction) {
   if (!player) {
     const newPlayerState: AudioPlayerState = {
       player: createAudioPlayer(),
-      guildId: guild.id,
+      guild: guild,
       playList: [],
       voiceChannelId: voiceChannel.id,
+      textChannel: interaction.channel,
     };
     player = newPlayerState.player;
     // player 인스턴스 상태 변경 이벤트 등록.
@@ -156,7 +192,7 @@ export async function play(interaction: Interaction) {
         `Player state changed: ${oldState.status} -> ${newState.status}`
       );
       if (newState.status === "idle") {
-        playAudio(guild.id, voiceChannel.id).catch((error) => {
+        playSong(guild.id, voiceChannel.id).catch((error) => {
           console.error("오디오 재생 중 오류 발생:", error);
         });
       }
@@ -182,6 +218,7 @@ export async function play(interaction: Interaction) {
 
   const videoId = ytdl.getVideoID(query);
 
+  const videoInfo = await ytdl.getInfo(query);
   const audioExists = await checkAudioExists(videoId);
   const audioFilePath = path.join(AUDIO_DIR, videoId);
 
@@ -196,10 +233,16 @@ export async function play(interaction: Interaction) {
     await new Promise((resolve) => writeStream.on("finish", resolve));
     await convertVideoToAudio(videoFilePath, audioFilePath);
   }
-
-  addSong(guild.id, voiceChannel.id, audioFilePath);
+  const songInfo: SongInfo = {
+    audioPath: audioFilePath,
+    channelName: videoInfo.videoDetails.author.name,
+    thumbnail: getOriginalThumnail(videoInfo.videoDetails.thumbnail.thumbnails),
+    videoTitle: videoInfo.videoDetails.title,
+    videoUrl: videoInfo.videoDetails.video_url,
+  };
+  addSong(guild.id, voiceChannel.id, songInfo);
   if (player.state.status === "idle") {
-    playAudio(guild.id, voiceChannel.id);
+    playSong(guild.id, voiceChannel.id);
   }
 
   connection.on("error", (error) => {
@@ -211,6 +254,22 @@ export async function play(interaction: Interaction) {
       `Connection state changed: ${oldState.status} -> ${newState.status}`
     );
   });
+}
+
+// TODO: 설명글도 넣어보기 ``` ```
+function buildPlayerEmbed({
+  channelName,
+  thumbnail,
+  videoTitle,
+  videoUrl,
+}: SongInfo) {
+  return new EmbedBuilder()
+    .setColor("DarkNavy")
+    .setDescription(
+      `-# mumusic\n**${channelName}**\n[**${videoTitle}**](${videoUrl})\n\n`
+    )
+    .setImage(thumbnail)
+    .setTimestamp();
 }
 
 export const command = new SlashCommandBuilder()
