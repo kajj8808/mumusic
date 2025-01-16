@@ -28,6 +28,8 @@ interface SongInfo {
   channelName: string;
   thumbnail: string;
   audioPath: string;
+  description: string | null;
+  duration: string;
 }
 
 interface AudioPlayerState {
@@ -38,6 +40,35 @@ interface AudioPlayerState {
   player: AudioPlayer;
 }
 const audioPlayerStates: AudioPlayerState[] = [];
+
+interface GenerateProgressMarkDownProps {
+  title?: string;
+  description?: string;
+  barLength: number;
+  percentage: number;
+}
+function generateProgressMarkdown({
+  title,
+  barLength,
+  description,
+  percentage,
+}: GenerateProgressMarkDownProps) {
+  const progressBarLength = barLength;
+  let progressBar = "";
+  if (title) {
+    progressBar += `**${title}**\n`;
+  }
+  if (description) {
+    progressBar += `${description}\n`;
+  }
+
+  progressBar += `${":blue_square:".repeat(
+    Math.floor(percentage)
+  )}${":white_large_square:".repeat(
+    progressBarLength - Math.floor(percentage)
+  )}`;
+  return progressBar;
+}
 
 /** audio player를 만들어주는 함수 guid, voice channel마다 다른 player를 사용하기 위해 사용.  */
 function createAudioPlayer() {
@@ -91,7 +122,7 @@ async function playSong(guildId: string, voiceChannelId: string) {
   }
 
   const playerEmbed = buildPlayerEmbed(songInfo);
-  currentAudioPlayer.textChannel.send({
+  const embedsMessage = await currentAudioPlayer.textChannel.send({
     embeds: [playerEmbed],
   });
 
@@ -100,6 +131,22 @@ async function playSong(guildId: string, voiceChannelId: string) {
   const audioResource = createAudioResource(audioStream);
   player.play(audioResource);
   connection.subscribe(player);
+
+  setInterval(() => {
+    const progress = Math.ceil(audioResource.playbackDuration / 1000);
+    const totalDuration = parseInt(songInfo.duration);
+    const progressBarLength = 22;
+    const progressPercentage = (progress / totalDuration) * progressBarLength; // bar길이에 대한 진행도.
+    const progressBar = generateProgressMarkdown({
+      description: `:notes: [${progress}/${totalDuration}] ${audioResource.playbackDuration}`,
+      barLength: progressBarLength,
+      percentage: progressPercentage,
+    });
+    const playerEmbed = buildPlayerEmbed(songInfo, progressBar);
+    embedsMessage.edit({
+      embeds: [playerEmbed],
+    });
+  }, 1000);
 }
 
 function getOriginalThumnail(thumbnails: ytdl.thumbnail[]) {
@@ -187,7 +234,7 @@ export async function play(interaction: Interaction) {
     };
     player = newPlayerState.player;
     // player 인스턴스 상태 변경 이벤트 등록.
-    newPlayerState.player.on("stateChange", (oldState, newState) => {
+    player.on("stateChange", (oldState, newState) => {
       console.log(
         `Player state changed: ${oldState.status} -> ${newState.status}`
       );
@@ -197,6 +244,7 @@ export async function play(interaction: Interaction) {
         });
       }
     });
+
     audioPlayerStates.push(newPlayerState);
   }
 
@@ -223,15 +271,20 @@ export async function play(interaction: Interaction) {
   const audioFilePath = path.join(AUDIO_DIR, videoId);
 
   if (!audioExists) {
-    // audio만 가져오는 filter로 했을경우 스트림이 종료되는 문제가 많이 발생해서 video와 같이 가져오는 방식 사용.
-    const stream = ytdl(query, {
-      filter: "audioandvideo",
-    });
-    const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
-    const writeStream = fs.createWriteStream(videoFilePath);
-    stream.pipe(writeStream);
-    await new Promise((resolve) => writeStream.on("finish", resolve));
-    await convertVideoToAudio(videoFilePath, audioFilePath);
+    try {
+      // audio만 가져오는 filter로 했을경우 스트림이 종료되는 문제가 많이 발생해서 video와 같이 가져오는 방식 사용.
+      const stream = ytdl(query, {
+        filter: "audioandvideo",
+      });
+      const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
+      const writeStream = fs.createWriteStream(videoFilePath);
+      stream.pipe(writeStream);
+
+      await new Promise((resolve) => writeStream.on("finish", resolve));
+      await convertVideoToAudio(videoFilePath, audioFilePath);
+    } catch (error) {
+      await interaction.editReply(`Youtube Stream Error: ${error}`);
+    }
   }
   const songInfo: SongInfo = {
     audioPath: audioFilePath,
@@ -239,8 +292,11 @@ export async function play(interaction: Interaction) {
     thumbnail: getOriginalThumnail(videoInfo.videoDetails.thumbnail.thumbnails),
     videoTitle: videoInfo.videoDetails.title,
     videoUrl: videoInfo.videoDetails.video_url,
+    duration: videoInfo.videoDetails.lengthSeconds,
+    description: videoInfo.videoDetails.description,
   };
   addSong(guild.id, voiceChannel.id, songInfo);
+
   if (player.state.status === "idle") {
     playSong(guild.id, voiceChannel.id);
   }
@@ -256,17 +312,22 @@ export async function play(interaction: Interaction) {
   });
 }
 
-// TODO: 설명글도 넣어보기 ``` ```
-function buildPlayerEmbed({
-  channelName,
-  thumbnail,
-  videoTitle,
-  videoUrl,
-}: SongInfo) {
+function buildPlayerEmbed(
+  { channelName, thumbnail, videoTitle, videoUrl, description }: SongInfo,
+  progressBar?: string
+) {
+  const safeDescription = description || "";
+  const truncatedDescription =
+    safeDescription.length > 100
+      ? safeDescription.slice(0, 100) + "..."
+      : safeDescription;
+
   return new EmbedBuilder()
     .setColor("DarkNavy")
     .setDescription(
-      `-# mumusic\n**${channelName}**\n[**${videoTitle}**](${videoUrl})\n\n`
+      `-# mumusic\n\n**${channelName}**\n### [${videoTitle}](${videoUrl})\n\`\`\`${truncatedDescription}\`\`\` \n${
+        progressBar ?? ""
+      }`
     )
     .setImage(thumbnail)
     .setTimestamp();
