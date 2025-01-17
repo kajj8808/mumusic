@@ -67,3 +67,8 @@ const ondata = chunk => {
 [muMusic-2024](https://github.com/kajj8808/Mumusic/tree/muMusic-2024)
 [2023-02](https://github.com/kajj8808/discord-musicbot-2023-02)
 [2021-06](https://github.com/kajj8808/discord_music_bot_2021-06)
+
+### 확인된 문제
+
+- [] ytdl close 부분에서 error가 나오는 경우가 있음.
+- [] 스트림 파일이 모두 처리되지 못해서 파일이 문제가 있는 경우가 있음 ( 그런 경우 재생시 에러 메세지를 내고 파일을 삭제.. )

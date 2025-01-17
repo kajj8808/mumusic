@@ -1,6 +1,5 @@
 import {
   AudioPlayer,
-  AudioPlayerStatus,
   createAudioPlayer as createDiscordVoicePlayer,
   createAudioResource,
   getVoiceConnection,
@@ -9,10 +8,12 @@ import {
   VoiceConnectionStatus,
 } from "@discordjs/voice";
 import {
+  ActionRowBuilder,
   EmbedBuilder,
   Guild,
   GuildMember,
   SlashCommandBuilder,
+  type ColorResolvable,
   type GuildTextBasedChannel,
   type Interaction,
 } from "discord.js";
@@ -21,6 +22,7 @@ import fs from "fs";
 import ytdl from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
+import { skipButton } from "../buttons/skip";
 
 interface SongInfo {
   videoTitle: string;
@@ -36,6 +38,7 @@ interface AudioPlayerState {
   voiceChannelId: string;
   guild: Guild;
   textChannel: GuildTextBasedChannel;
+  interaction: Interaction;
   playList: SongInfo[];
   player: AudioPlayer;
 }
@@ -47,6 +50,7 @@ interface GenerateProgressMarkDownProps {
   barLength: number;
   percentage: number;
 }
+
 function generateProgressMarkdown({
   title,
   barLength,
@@ -92,6 +96,10 @@ function findPlayerState(guildId: string, voiceChannelId: string) {
   );
 }
 
+export function skipSong(guildId: string, voiceChannelId: string) {
+  playSong(guildId, voiceChannelId);
+}
+
 function getAudioPlayer(guildId: string, voiceChannelId: string) {
   const currentAudioPlayer = findPlayerState(guildId, voiceChannelId);
   return currentAudioPlayer?.player;
@@ -121,9 +129,11 @@ async function playSong(guildId: string, voiceChannelId: string) {
     return;
   }
 
-  const playerEmbed = buildPlayerEmbed(songInfo);
+  const playerEmbed = await buildPlayerEmbed(songInfo);
+  const row = new ActionRowBuilder().addComponents(skipButton) as any;
   const embedsMessage = await currentAudioPlayer.textChannel.send({
     embeds: [playerEmbed],
+    components: [row],
   });
 
   const player = currentAudioPlayer.player;
@@ -132,10 +142,10 @@ async function playSong(guildId: string, voiceChannelId: string) {
   player.play(audioResource);
   connection.subscribe(player);
 
-  const progressInterval = setInterval(() => {
+  const progressInterval = setInterval(async () => {
     const progress = Math.ceil(audioResource.playbackDuration / 1000);
     const totalDuration = parseInt(songInfo.duration);
-    const progressBarLength = 22;
+    const progressBarLength = 18;
     const progressPercentage = (progress / totalDuration) * progressBarLength; // bar길이에 대한 진행도.
     const progressBar = generateProgressMarkdown({
       description: `:notes: [${progress}/${totalDuration}] ${audioResource.playbackDuration}`,
@@ -145,12 +155,13 @@ async function playSong(guildId: string, voiceChannelId: string) {
 
     if (audioResource.ended === true) {
       clearInterval(progressInterval);
-      const playerEmbed = buildPlayerEmbed(songInfo);
-      embedsMessage.edit({
+      const playerEmbed = await buildPlayerEmbed(songInfo);
+      await embedsMessage.edit({
         embeds: [playerEmbed],
+        components: [],
       });
     } else {
-      const playerEmbed = buildPlayerEmbed(songInfo, progressBar);
+      const playerEmbed = await buildPlayerEmbed(songInfo, progressBar);
       embedsMessage.edit({
         embeds: [playerEmbed],
       });
@@ -208,11 +219,17 @@ async function convertVideoToAudio(videoPath: string, audioPath: string) {
   });
 }
 
-async function updateTextChannel(
-  guid: Guild,
-  voiceChannelId: string,
-  textChannel: GuildTextBasedChannel
-) {
+async function updateTextChannelAndInteraction({
+  guid,
+  voiceChannelId,
+  textChannel,
+  interaction,
+}: {
+  guid: Guild;
+  voiceChannelId: string;
+  textChannel: GuildTextBasedChannel;
+  interaction: Interaction;
+}) {
   const playerState = findPlayerState(guid.id, voiceChannelId);
 
   const existingIndex = audioPlayerStates.findIndex(
@@ -221,6 +238,7 @@ async function updateTextChannel(
   if (existingIndex !== 1 && playerState) {
     const updatedPlayerState = playerState;
     updatedPlayerState.textChannel = textChannel;
+    updatedPlayerState.interaction = interaction;
     audioPlayerStates[existingIndex] = updatedPlayerState;
   }
 }
@@ -257,7 +275,9 @@ export async function play(interaction: Interaction) {
       playList: [],
       voiceChannelId: voiceChannel.id,
       textChannel: interaction.channel,
+      interaction: interaction,
     };
+
     player = newPlayerState.player;
     // player 인스턴스 상태 변경 이벤트 등록.
     player.on("stateChange", (oldState, newState) => {
@@ -273,7 +293,12 @@ export async function play(interaction: Interaction) {
 
     audioPlayerStates.push(newPlayerState);
   }
-  updateTextChannel(guild, voiceChannel.id, interaction.channel);
+  updateTextChannelAndInteraction({
+    guid: guild,
+    interaction: interaction,
+    textChannel: interaction.channel,
+    voiceChannelId: voiceChannel.id,
+  });
   const connection = joinVoiceChannel({
     debug: true,
     channelId: voiceChannel.id,
@@ -322,9 +347,14 @@ export async function play(interaction: Interaction) {
     description: videoInfo.videoDetails.description,
   };
   addSong(guild.id, voiceChannel.id, songInfo);
+  console.log(player.state.status);
 
   if (player.state.status === "idle") {
     playSong(guild.id, voiceChannel.id);
+  } else {
+    await interaction.editReply(
+      `Added ${songInfo.videoTitle} [${songInfo.duration}]`
+    );
   }
 
   connection.on("error", (error) => {
@@ -338,7 +368,7 @@ export async function play(interaction: Interaction) {
   });
 }
 
-function buildPlayerEmbed(
+async function buildPlayerEmbed(
   { channelName, thumbnail, videoTitle, videoUrl, description }: SongInfo,
   progressBar?: string
 ) {
