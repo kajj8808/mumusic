@@ -84,7 +84,7 @@ async function checkAudioExists(videoId: string) {
   return audioFiles.some((file) => file.includes(videoId));
 }
 
-function findAudioPlayer(guildId: string, voiceChannelId: string) {
+function findPlayerState(guildId: string, voiceChannelId: string) {
   return audioPlayerStates.find(
     (audioPlayer) =>
       audioPlayer.guild.id === guildId &&
@@ -93,17 +93,17 @@ function findAudioPlayer(guildId: string, voiceChannelId: string) {
 }
 
 function getAudioPlayer(guildId: string, voiceChannelId: string) {
-  const currentAudioPlayer = findAudioPlayer(guildId, voiceChannelId);
+  const currentAudioPlayer = findPlayerState(guildId, voiceChannelId);
   return currentAudioPlayer?.player;
 }
 
 function addSong(guildId: string, voiceChannelId: string, songInfo: SongInfo) {
-  const audioPlayer = findAudioPlayer(guildId, voiceChannelId);
+  const audioPlayer = findPlayerState(guildId, voiceChannelId);
   audioPlayer?.playList.push(songInfo);
 }
 
 async function playSong(guildId: string, voiceChannelId: string) {
-  const currentAudioPlayer = findAudioPlayer(guildId, voiceChannelId);
+  const currentAudioPlayer = findPlayerState(guildId, voiceChannelId);
   if (!currentAudioPlayer) {
     console.error("오디오 플레이어를 찾을 수 없습니다.");
     return;
@@ -132,7 +132,7 @@ async function playSong(guildId: string, voiceChannelId: string) {
   player.play(audioResource);
   connection.subscribe(player);
 
-  setInterval(() => {
+  const progressInterval = setInterval(() => {
     const progress = Math.ceil(audioResource.playbackDuration / 1000);
     const totalDuration = parseInt(songInfo.duration);
     const progressBarLength = 22;
@@ -142,10 +142,19 @@ async function playSong(guildId: string, voiceChannelId: string) {
       barLength: progressBarLength,
       percentage: progressPercentage,
     });
-    const playerEmbed = buildPlayerEmbed(songInfo, progressBar);
-    embedsMessage.edit({
-      embeds: [playerEmbed],
-    });
+
+    if (audioResource.ended === true) {
+      clearInterval(progressInterval);
+      const playerEmbed = buildPlayerEmbed(songInfo);
+      embedsMessage.edit({
+        embeds: [playerEmbed],
+      });
+    } else {
+      const playerEmbed = buildPlayerEmbed(songInfo, progressBar);
+      embedsMessage.edit({
+        embeds: [playerEmbed],
+      });
+    }
   }, 1000);
 }
 
@@ -199,6 +208,23 @@ async function convertVideoToAudio(videoPath: string, audioPath: string) {
   });
 }
 
+async function updateTextChannel(
+  guid: Guild,
+  voiceChannelId: string,
+  textChannel: GuildTextBasedChannel
+) {
+  const playerState = findPlayerState(guid.id, voiceChannelId);
+
+  const existingIndex = audioPlayerStates.findIndex(
+    (state) => state.guild === guid && state.voiceChannelId === voiceChannelId
+  );
+  if (existingIndex !== 1 && playerState) {
+    const updatedPlayerState = playerState;
+    updatedPlayerState.textChannel = textChannel;
+    audioPlayerStates[existingIndex] = updatedPlayerState;
+  }
+}
+
 export async function play(interaction: Interaction) {
   if (!interaction.inGuild()) {
     console.error("이 명령어는 채널(Guild)내에서만 사용 가능합니다.");
@@ -247,7 +273,7 @@ export async function play(interaction: Interaction) {
 
     audioPlayerStates.push(newPlayerState);
   }
-
+  updateTextChannel(guild, voiceChannel.id, interaction.channel);
   const connection = joinVoiceChannel({
     debug: true,
     channelId: voiceChannel.id,
