@@ -19,7 +19,7 @@ import {
 } from "discord.js";
 import path from "path";
 import fs from "fs";
-import ytdl from "@distube/ytdl-core";
+import ytdl, { getVideoID } from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
 import { skipButton } from "../buttons/skip";
@@ -96,6 +96,11 @@ function findPlayerState(guildId: string, voiceChannelId: string) {
   );
 }
 
+export function getPlayList(guildId: string, voiceChannelId: string) {
+  const playerState = findPlayerState(guildId, voiceChannelId);
+  return playerState?.playList;
+}
+
 export function skipSong(guildId: string, voiceChannelId: string) {
   playSong(guildId, voiceChannelId);
 }
@@ -129,44 +134,58 @@ async function playSong(guildId: string, voiceChannelId: string) {
     return;
   }
 
-  const playerEmbed = await buildPlayerEmbed(songInfo);
-  const row = new ActionRowBuilder().addComponents(skipButton) as any;
-  const embedsMessage = await currentAudioPlayer.textChannel.send({
-    embeds: [playerEmbed],
-    components: [row],
-  });
+  try {
+    const player = currentAudioPlayer.player;
+    const audioStream = fs.createReadStream(songInfo.audioPath);
+    const audioResource = createAudioResource(audioStream);
+    player.play(audioResource);
+    connection.subscribe(player);
 
-  const player = currentAudioPlayer.player;
-  const audioStream = fs.createReadStream(songInfo.audioPath);
-  const audioResource = createAudioResource(audioStream);
-  player.play(audioResource);
-  connection.subscribe(player);
-
-  const progressInterval = setInterval(async () => {
-    const progress = Math.ceil(audioResource.playbackDuration / 1000);
-    const totalDuration = parseInt(songInfo.duration);
-    const progressBarLength = 18;
-    const progressPercentage = (progress / totalDuration) * progressBarLength; // bar길이에 대한 진행도.
-    const progressBar = generateProgressMarkdown({
-      description: `:notes: [${progress}/${totalDuration}] ${audioResource.playbackDuration}`,
-      barLength: progressBarLength,
-      percentage: progressPercentage,
+    const playerEmbed = await buildPlayerEmbed(songInfo);
+    const row = new ActionRowBuilder().addComponents(skipButton) as any;
+    const embedsMessage = await currentAudioPlayer.textChannel.send({
+      embeds: [playerEmbed],
+      components: [row],
     });
 
-    if (audioResource.ended === true) {
-      clearInterval(progressInterval);
-      const playerEmbed = await buildPlayerEmbed(songInfo);
-      await embedsMessage.edit({
-        embeds: [playerEmbed],
-        components: [],
+    const progressInterval = setInterval(async () => {
+      const progress = Math.ceil(audioResource.playbackDuration / 1000);
+      const totalDuration = parseInt(songInfo.duration);
+      const progressBarLength = 18;
+      const progressPercentage = (progress / totalDuration) * progressBarLength; // bar길이에 대한 진행도.
+      const progressBar = generateProgressMarkdown({
+        description: `:notes: [${progress}/${totalDuration}] ${audioResource.playbackDuration}`,
+        barLength: progressBarLength,
+        percentage: progressPercentage,
       });
-    } else {
-      const playerEmbed = await buildPlayerEmbed(songInfo, progressBar);
-      embedsMessage.edit({
-        embeds: [playerEmbed],
-      });
+
+      if (audioResource.ended === true) {
+        clearInterval(progressInterval);
+        const playerEmbed = await buildPlayerEmbed(songInfo);
+        await embedsMessage.edit({
+          embeds: [playerEmbed],
+          components: [],
+        });
+      } else {
+        const playerEmbed = await buildPlayerEmbed(songInfo, progressBar);
+        embedsMessage.edit({
+          embeds: [playerEmbed],
+        });
+      }
+    }, 1000);
+  } catch (error) {
+    const videoId = getVideoID(songInfo.videoUrl);
+    const audios = fs.readdirSync(AUDIO_DIR);
+    // 문제가 있는 파일들 ( 파일이 손상 되었을 경우나, 변환이 재대로 되지 않았을 경우 )
+    for (const audioPath of audios) {
+      if (audioPath.includes(videoId)) {
+        fs.rmSync(audioPath);
+      }
     }
-  }, 1000);
+    await currentAudioPlayer.textChannel.send(
+      `❌ ${videoId} - 스트림이나 파일이 손상되었습니다 다시 시도해 주세요.`
+    );
+  }
 }
 
 function getOriginalThumnail(thumbnails: ytdl.thumbnail[]) {
@@ -314,8 +333,12 @@ export async function play(interaction: Interaction) {
       });
     });
   }
-
-  const videoId = ytdl.getVideoID(query);
+  let videoId = "";
+  try {
+    videoId = ytdl.getVideoID(query);
+  } catch (error) {
+    await interaction.editReply("video id error");
+  }
 
   const videoInfo = await ytdl.getInfo(query);
   const audioExists = await checkAudioExists(videoId);
@@ -330,7 +353,6 @@ export async function play(interaction: Interaction) {
       const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
       const writeStream = fs.createWriteStream(videoFilePath);
       stream.pipe(writeStream);
-
       await new Promise((resolve) => writeStream.on("finish", resolve));
       await convertVideoToAudio(videoFilePath, audioFilePath);
     } catch (error) {
@@ -347,7 +369,6 @@ export async function play(interaction: Interaction) {
     description: videoInfo.videoDetails.description,
   };
   addSong(guild.id, voiceChannel.id, songInfo);
-  console.log(player.state.status);
 
   if (player.state.status === "idle") {
     playSong(guild.id, voiceChannel.id);
