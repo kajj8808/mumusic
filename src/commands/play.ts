@@ -408,7 +408,6 @@ export async function play(interaction: Interaction) {
       await interaction.editReply(`Youtube Stream Error: ${error}`);
     }
   }
-  await interaction.deleteReply();
   const songInfo: SongInfo = {
     audioPath: audioFilePath,
     channelName: videoInfo.videoDetails.author.name,
