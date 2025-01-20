@@ -11,7 +11,20 @@ client.on("ready", (client) => {
   console.log(`👾 ${client.user.username} is online`);
 });
 
-client.on("interactionCreate", (interaction) => {
+client.on("interactionCreate", async (interaction) => {
+  if (interaction.isAutocomplete()) {
+    const focusedValue = interaction.options.getFocused();
+    const searchResult = await searchYoutube(focusedValue, 2);
+
+    const options = searchResult.map((result) => {
+      return {
+        name: result.snippet.title,
+        value: result.id.videoId,
+      };
+    });
+
+    await interaction.respond(options);
+  }
   if (interaction.isCommand()) {
     switch (interaction.commandName) {
       case "play":
@@ -37,3 +50,6 @@ async function main() {
   client.login(process.env.DISCORD_BOT_TOKEN);
 }
 main();
+
+import "../src/lib/youtube";
+import { searchYoutube } from "../src/lib/youtube";

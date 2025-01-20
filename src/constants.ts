@@ -1,3 +1,3 @@
 import path from "path";
 
-export const AUDIO_DIR = path.join(__dirname, "../sample/audio/");
+export const AUDIO_DIR = path.join(__dirname, "../public/audio/");

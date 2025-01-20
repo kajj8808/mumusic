@@ -19,3 +19,12 @@ export async function getProminentColorHexCode(imageUrl: string) {
 
   return hexCode ?? "#1f1f1f";
 }
+export function formatSecondsToMinutes(seconds: string) {
+  const numSecond = parseInt(seconds);
+
+  const minutes = Math.floor((numSecond % 3600) / 60);
+  const remainingSeconds = numSecond % 60;
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+}

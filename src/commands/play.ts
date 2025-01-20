@@ -24,6 +24,8 @@ import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
 import { skipButton } from "../buttons/skip";
 import { playlistButton } from "../buttons/playlist";
+import { searchYoutube } from "../lib/youtube";
+import { formatSecondsToMinutes } from "../lib/utils";
 
 interface SongInfo {
   videoTitle: string;
@@ -103,7 +105,16 @@ export function getPlayList(guildId: string, voiceChannelId: string) {
 }
 
 export function skipSong(guildId: string, voiceChannelId: string) {
-  playSong(guildId, voiceChannelId);
+  const playerState = findPlayerState(guildId, voiceChannelId);
+  if (!playerState) {
+    console.error("player not found error... skipSong");
+    return;
+  }
+  if (playerState.playList.length > 0) {
+    playSong(guildId, voiceChannelId);
+  } else {
+    playerState.textChannel.send("🔥playlist is empty..🔥");
+  }
 }
 
 function getAudioPlayer(guildId: string, voiceChannelId: string) {
@@ -157,7 +168,11 @@ async function playSong(guildId: string, voiceChannelId: string) {
       const progressBarLength = 18;
       const progressPercentage = (progress / totalDuration) * progressBarLength; // bar길이에 대한 진행도.
       const progressBar = generateProgressMarkdown({
-        description: `:notes: [${progress}/${totalDuration}] ${audioResource.playbackDuration}`,
+        description: `:notes: [${formatSecondsToMinutes(
+          progress.toString()
+        )}/${formatSecondsToMinutes(totalDuration.toString())}] ${
+          audioResource.playbackDuration
+        }`,
         barLength: progressBarLength,
         percentage: progressPercentage,
       });
@@ -280,7 +295,7 @@ export async function play(interaction: Interaction) {
   const voiceChannel = (interaction.member as GuildMember).voice.channel;
 
   const guild = interaction.guild;
-  // FIXME: query가 url인 상태임.. 여기 수정
+
   const query = interaction.options.get("query")?.value?.toString()!; // input option이 required임
 
   if (!voiceChannel || !guild || !interaction.channel) {
@@ -341,11 +356,11 @@ export async function play(interaction: Interaction) {
   try {
     videoId = ytdl.getVideoID(query);
   } catch (error) {
-    await interaction.editReply(`No video id found: ${query}`);
-    return;
+    const searchResult = await searchYoutube(query, 1);
+    videoId = searchResult[0].id.videoId;
   }
 
-  const videoInfo = await ytdl.getInfo(query);
+  const videoInfo = await ytdl.getInfo(videoId);
   const audioExists = await checkAudioExists(videoId);
   const audioFilePath = path.join(AUDIO_DIR, videoId);
 
@@ -379,7 +394,9 @@ export async function play(interaction: Interaction) {
     playSong(guild.id, voiceChannel.id);
   } else {
     await interaction.editReply(
-      `Added ${songInfo.videoTitle} [${songInfo.duration}]`
+      `Added ${songInfo.videoTitle} [${formatSecondsToMinutes(
+        songInfo.duration.toString()
+      )}]`
     );
   }
 
