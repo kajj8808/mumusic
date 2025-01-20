@@ -26,6 +26,7 @@ import { skipButton } from "../buttons/skip";
 import { playlistButton } from "../buttons/playlist";
 import { searchYoutube } from "../lib/youtube";
 import { formatSecondsToMinutes } from "../lib/utils";
+import { stopButton } from "../buttons/stop";
 
 interface SongInfo {
   videoTitle: string;
@@ -86,6 +87,25 @@ function createAudioPlayer() {
   return player;
 }
 
+export function stopSong(guildId: string, voiceChannelId: string) {
+  const playerState = findPlayerState(guildId, voiceChannelId);
+  if (!playerState) {
+    console.error("플레이어를 찾을 수 없습니다.");
+    return;
+  }
+  const player = playerState.player;
+  player.stop();
+  for (let i = 0; i < audioPlayerStates.length; i++) {
+    if (
+      audioPlayerStates[i].guild.id === guildId &&
+      audioPlayerStates[i].voiceChannelId === voiceChannelId
+    ) {
+      audioPlayerStates.splice(i, 1);
+      break;
+    }
+  }
+}
+
 async function checkAudioExists(videoId: string) {
   const audioFiles = fs.readdirSync(AUDIO_DIR);
   return audioFiles.some((file) => file.includes(videoId));
@@ -113,7 +133,8 @@ export function skipSong(guildId: string, voiceChannelId: string) {
   if (playerState.playList.length > 0) {
     playSong(guildId, voiceChannelId);
   } else {
-    playerState.textChannel.send("🔥playlist is empty..🔥");
+    const interaction = playerState.interaction as any;
+    interaction.replay("🔥 playlist is empty.. 🔥");
   }
 }
 
@@ -156,7 +177,8 @@ async function playSong(guildId: string, voiceChannelId: string) {
     const playerEmbed = await buildPlayerEmbed(songInfo);
     const row = new ActionRowBuilder()
       .addComponents(skipButton)
-      .addComponents(playlistButton) as any;
+      .addComponents(playlistButton)
+      .addComponents(stopButton) as any;
     const embedsMessage = await currentAudioPlayer.textChannel.send({
       embeds: [playerEmbed],
       components: [row],
@@ -352,11 +374,18 @@ export async function play(interaction: Interaction) {
       });
     });
   }
-  let videoId = "";
+
+  await interaction.editReply("🔎 유튜브 검색중..");
+
+  let videoId = undefined;
   try {
     videoId = ytdl.getVideoID(query);
   } catch (error) {
     const searchResult = await searchYoutube(query, 1);
+    if (!searchResult) {
+      await interaction.editReply("😥 YOUTUBE API KEY 할당량 초과..");
+      return;
+    }
     videoId = searchResult[0].id.videoId;
   }
 
@@ -365,6 +394,7 @@ export async function play(interaction: Interaction) {
   const audioFilePath = path.join(AUDIO_DIR, videoId);
 
   if (!audioExists) {
+    await interaction.editReply("🌐 유튜브에서 영상 스트림 다운로드 중..");
     try {
       // audio만 가져오는 filter로 했을경우 스트림이 종료되는 문제가 많이 발생해서 video와 같이 가져오는 방식 사용.
       const stream = ytdl(query, {
@@ -374,6 +404,7 @@ export async function play(interaction: Interaction) {
       const writeStream = fs.createWriteStream(videoFilePath);
       stream.pipe(writeStream);
       await new Promise((resolve) => writeStream.on("finish", resolve));
+      await interaction.editReply("🪄 영상을 오디오로 전환 중...");
       await convertVideoToAudio(videoFilePath, audioFilePath);
     } catch (error) {
       await interaction.editReply(`Youtube Stream Error: ${error}`);

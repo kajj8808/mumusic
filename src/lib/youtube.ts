@@ -48,6 +48,6 @@ export async function searchYoutube(query: string, maxResults: number) {
     return data.items as YouTubeSearchResult[];
   } catch (error) {
     console.error(`searchYoutube error: ${error}`);
-    throw error;
+    return undefined;
   }
 }

@@ -1,7 +1,12 @@
 import { Client } from "discord.js";
+
+import { searchYoutube } from "../src/lib/youtube";
+
 import { play } from "./commands/play";
+
 import { skip } from "./buttons/skip";
 import { playlist } from "./buttons/playlist";
+import { stop } from "./buttons/stop";
 
 const client = new Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -15,10 +20,12 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.isAutocomplete()) {
     const focusedValue = interaction.options.getFocused();
     const searchResult = await searchYoutube(focusedValue, 2);
-
+    if (!searchResult) {
+      return;
+    }
     const options = searchResult.map((result) => {
       return {
-        name: result.snippet.title,
+        name: result.snippet.title.slice(1, 99),
         value: result.id.videoId,
       };
     });
@@ -40,6 +47,9 @@ client.on("interactionCreate", async (interaction) => {
       case "playlist":
         playlist(interaction);
         break;
+      case "stop":
+        stop(interaction);
+        break;
     }
   }
 });
@@ -50,6 +60,3 @@ async function main() {
   client.login(process.env.DISCORD_BOT_TOKEN);
 }
 main();
-
-import "../src/lib/youtube";
-import { searchYoutube } from "../src/lib/youtube";
