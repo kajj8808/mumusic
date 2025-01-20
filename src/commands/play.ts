@@ -420,7 +420,7 @@ export async function play(interaction: Interaction) {
   addSong(guild.id, voiceChannel.id, songInfo);
 
   if (player.state.status === "idle") {
-    await interaction.editReply("");
+    await interaction.editReply("\n");
     playSong(guild.id, voiceChannel.id);
   } else {
     await interaction.editReply(
