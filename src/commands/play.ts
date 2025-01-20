@@ -420,10 +420,11 @@ export async function play(interaction: Interaction) {
   addSong(guild.id, voiceChannel.id, songInfo);
 
   if (player.state.status === "idle") {
+    await interaction.deleteReply();
     playSong(guild.id, voiceChannel.id);
   } else {
     await interaction.editReply(
-      `Added ${songInfo.videoTitle} [${formatSecondsToMinutes(
+      `-# mumusic\nAdded ${songInfo.videoTitle} [${formatSecondsToMinutes(
         songInfo.duration.toString()
       )}]`
     );

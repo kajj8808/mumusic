@@ -22,7 +22,7 @@ export async function playlist(interaction: ButtonInteraction<CacheType>) {
       return await interaction.reply("🔥 playlist is empty.. 🔥");
     } else {
       return await interaction.reply(
-        `-# mumusic playlist
+        `-# mumusic
         ${playlist
           .map(
             (song, index) =>
