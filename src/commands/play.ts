@@ -395,7 +395,7 @@ export async function play(interaction: Interaction) {
     await interaction.editReply("🌐 유튜브에서 영상 스트림 다운로드 중..");
     try {
       // audio만 가져오는 filter로 했을경우 스트림이 종료되는 문제가 많이 발생해서 video와 같이 가져오는 방식 사용.
-      const stream = ytdl(query, {
+      const stream = ytdl(videoId, {
         filter: "audioandvideo",
       });
       const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
