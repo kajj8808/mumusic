@@ -23,6 +23,7 @@ import ytdl, { getVideoID } from "@distube/ytdl-core";
 import ffmpeg from "fluent-ffmpeg";
 import { AUDIO_DIR } from "../constants";
 import { skipButton } from "../buttons/skip";
+import { playlistButton } from "../buttons/playlist";
 
 interface SongInfo {
   videoTitle: string;
@@ -142,7 +143,9 @@ async function playSong(guildId: string, voiceChannelId: string) {
     connection.subscribe(player);
 
     const playerEmbed = await buildPlayerEmbed(songInfo);
-    const row = new ActionRowBuilder().addComponents(skipButton) as any;
+    const row = new ActionRowBuilder()
+      .addComponents(skipButton)
+      .addComponents(playlistButton) as any;
     const embedsMessage = await currentAudioPlayer.textChannel.send({
       embeds: [playerEmbed],
       components: [row],
@@ -179,9 +182,10 @@ async function playSong(guildId: string, voiceChannelId: string) {
     // 문제가 있는 파일들 ( 파일이 손상 되었을 경우나, 변환이 재대로 되지 않았을 경우 )
     for (const audioPath of audios) {
       if (audioPath.includes(videoId)) {
-        fs.rmSync(audioPath);
+        fs.rmSync(path.join(AUDIO_DIR, audioPath));
       }
     }
+
     await currentAudioPlayer.textChannel.send(
       `❌ ${videoId} - 스트림이나 파일이 손상되었습니다 다시 시도해 주세요.`
     );
@@ -337,7 +341,8 @@ export async function play(interaction: Interaction) {
   try {
     videoId = ytdl.getVideoID(query);
   } catch (error) {
-    await interaction.editReply("video id error");
+    await interaction.editReply(`No video id found: ${query}`);
+    return;
   }
 
   const videoInfo = await ytdl.getInfo(query);

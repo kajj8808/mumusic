@@ -1,6 +1,7 @@
 import { Client } from "discord.js";
 import { play } from "./commands/play";
 import { skip } from "./buttons/skip";
+import { playlist } from "./buttons/playlist";
 
 const client = new Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -22,6 +23,9 @@ client.on("interactionCreate", (interaction) => {
     switch (interaction.customId) {
       case "skip":
         skip(interaction);
+        break;
+      case "playlist":
+        playlist(interaction);
         break;
     }
   }

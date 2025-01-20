@@ -45,21 +45,31 @@ bun run dev
 ```javascript
 node_modules/@distube/ytdl-core/lib/index.js
 
-let contentLength,
-    downloaded = 0,
-    totalReceived = 0;
+  stream.setMaxListeners(0);
+  let contentLength,
+    downloaded ,totalReceived = 0;
 
-const ondata = chunk => {
-    // 수정 부분
-    totalReceived += chunk.length;
-    if (totalReceived >= contentLength) {
-        stream.end(); // 스트림 종료
-        return;
-    }
+  stream.on("error", ()=>{
+    stream.emit('error' , "stream close error...");
+  })
 
+  const ondata = chunk => {
     downloaded += chunk.length;
     stream.emit('progress', chunk.length, downloaded, contentLength);
-};
+
+    totalReceived += chunk.length;
+    if (totalReceived >= contentLength) {
+      try {
+        stream.end()
+        stream.close();
+      } catch (error) {
+        stream.emit('error', "Error closing stream: " + error.message);
+      }
+      return;
+    }
+
+  };
+
 ```
 
 ## Newest Versions

@@ -18,9 +18,17 @@ export async function playlist(interaction: ButtonInteraction<CacheType>) {
     const guild = interaction.guild.id;
     const playlist = getPlayList(guild, voiceChannel.id);
     if (!playlist) {
-      return await interaction.editReply("Playlist is empty..");
+      return await interaction.reply("Playlist is empty..");
     } else {
-      return await interaction.editReply(playlist.join("\n-"));
+      return await interaction.reply(
+        `-# mumusic\n\n
+        ${playlist
+          .map(
+            (song, index) =>
+              `${index + 1}. ${song.videoTitle} - [${song.duration}]`
+          )
+          .join("\n")}`
+      );
     }
   }
 }
