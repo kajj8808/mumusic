@@ -192,9 +192,7 @@ async function playSong(guildId: string, voiceChannelId: string) {
       const progressBar = generateProgressMarkdown({
         description: `:notes: [${formatSecondsToMinutes(
           progress.toString()
-        )}/${formatSecondsToMinutes(totalDuration.toString())}] ${
-          audioResource.playbackDuration
-        }`,
+        )}/${formatSecondsToMinutes(totalDuration.toString())}]`,
         barLength: progressBarLength,
         percentage: progressPercentage,
       });
@@ -410,6 +408,7 @@ export async function play(interaction: Interaction) {
       await interaction.editReply(`Youtube Stream Error: ${error}`);
     }
   }
+  await interaction.deleteReply();
   const songInfo: SongInfo = {
     audioPath: audioFilePath,
     channelName: videoInfo.videoDetails.author.name,
