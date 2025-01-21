@@ -373,7 +373,7 @@ export async function play(interaction: Interaction) {
     });
   }
 
-  await interaction.editReply("🔎 유튜브 검색중..");
+  await replyResponse.edit("🔎 유튜브 검색중..");
 
   let videoId = undefined;
   try {
@@ -381,7 +381,7 @@ export async function play(interaction: Interaction) {
   } catch (error) {
     const searchResult = await searchYoutube(query, 1);
     if (!searchResult) {
-      await interaction.editReply("😥 YOUTUBE API KEY 할당량 초과..");
+      await replyResponse.edit("😥 YOUTUBE API KEY 할당량 초과..");
       return;
     }
     videoId = searchResult[0].id.videoId;
@@ -392,7 +392,7 @@ export async function play(interaction: Interaction) {
   const audioFilePath = path.join(AUDIO_DIR, videoId);
 
   if (!audioExists) {
-    await interaction.editReply("🌐 유튜브에서 영상 스트림 다운로드 중..");
+    await replyResponse.edit("🌐 유튜브에서 영상 스트림 다운로드 중..");
     try {
       // audio만 가져오는 filter로 했을경우 스트림이 종료되는 문제가 많이 발생해서 video와 같이 가져오는 방식 사용.
       const stream = ytdl(videoId, {
@@ -401,11 +401,11 @@ export async function play(interaction: Interaction) {
       const videoFilePath = path.join(AUDIO_DIR, `${videoId}.mp4`);
       const writeStream = fs.createWriteStream(videoFilePath);
       stream.pipe(writeStream);
-      await new Promise((resolve) => writeStream.on("finish", resolve));
-      await interaction.editReply("🪄 영상을 오디오로 전환 중...");
+      await new Promise((resolve) => stream.on("done", resolve));
+      await replyResponse.edit("🪄 영상을 오디오로 전환 중...");
       await convertVideoToAudio(videoFilePath, audioFilePath);
     } catch (error) {
-      await interaction.editReply(`Youtube Stream Error: ${error}`);
+      await replyResponse.edit(`Youtube Stream Error: ${error}`);
     }
   }
   const songInfo: SongInfo = {
@@ -420,7 +420,6 @@ export async function play(interaction: Interaction) {
   addSong(guild.id, voiceChannel.id, songInfo);
 
   if (player.state.status === "idle") {
-    await interaction.editReply("\n");
     playSong(guild.id, voiceChannel.id);
   } else {
     await interaction.editReply(

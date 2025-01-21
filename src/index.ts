@@ -7,6 +7,7 @@ import { play } from "./commands/play";
 import { skip } from "./buttons/skip";
 import { playlist } from "./buttons/playlist";
 import { stop } from "./buttons/stop";
+import ytdl from "@distube/ytdl-core";
 
 const client = new Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -19,7 +20,7 @@ client.on("ready", (client) => {
 client.on("interactionCreate", async (interaction) => {
   if (interaction.isAutocomplete()) {
     const focusedValue = interaction.options.getFocused();
-    const searchResult = await searchYoutube(focusedValue, 2);
+    const searchResult = await searchYoutube(focusedValue, 1);
     if (!searchResult) {
       return;
     }

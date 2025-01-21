@@ -50,7 +50,9 @@ node_modules/@distube/ytdl-core/lib/index.js
     downloaded ,totalReceived = 0;
 
   stream.on("error", ()=>{
-    stream.emit('error' , "stream close error...");
+    if (!stream.destroyed) {
+      stream.emit('error', "stream close error...");
+    }
   })
 
   const ondata = chunk => {
@@ -60,16 +62,13 @@ node_modules/@distube/ytdl-core/lib/index.js
     totalReceived += chunk.length;
     if (totalReceived >= contentLength) {
       try {
-        stream.end()
-        stream.close();
+        stream.emit("done", true)
       } catch (error) {
         stream.emit('error', "Error closing stream: " + error.message);
       }
       return;
     }
-
   };
-
 ```
 
 ## Newest Versions
