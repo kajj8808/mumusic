@@ -402,7 +402,6 @@ export async function play(interaction: Interaction) {
       await new Promise((resolve) => stream.on("done", resolve));
       await reply.edit("🪄 영상을 오디오로 전환 중...");
       await convertVideoToAudio(videoFilePath, audioFilePath);
-      await reply.delete();
     } catch (error) {
       await reply.edit(`Youtube Stream Error: ${error}`);
     }
@@ -420,9 +419,10 @@ export async function play(interaction: Interaction) {
   addSong(guild.id, voiceChannel.id, songInfo);
 
   if (player.state.status === "idle") {
+    await reply.delete();
     playSong(guild.id, voiceChannel.id);
   } else {
-    await interaction.editReply(
+    await reply.edit(
       `-# mumusic\nAdded ${songInfo.videoTitle} [${formatSecondsToMinutes(
         songInfo.duration.toString()
       )}]`
