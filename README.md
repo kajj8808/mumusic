@@ -71,6 +71,14 @@ node_modules/@distube/ytdl-core/lib/index.js
   };
 ```
 
+### 오래동안 재시작 않을시 문제가 생기는 부분 수정 (pm2)
+
+pm2를 사용해 restart하는 코드 추가.
+
+```
+pm2 start bun --name mumusic -- run dev
+```
+
 ## Newest Versions
 
 [muMusic-2024](https://github.com/kajj8808/Mumusic/tree/muMusic-2024)
