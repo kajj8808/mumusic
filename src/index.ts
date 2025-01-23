@@ -7,7 +7,8 @@ import { play } from "./commands/play";
 import { skip } from "./buttons/skip";
 import { playlist } from "./buttons/playlist";
 import { stop } from "./buttons/stop";
-import ytdl from "@distube/ytdl-core";
+import { reload } from "./commands/reload";
+import { discordCommandInit } from "./commands/init";
 
 const client = new Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
@@ -37,6 +38,10 @@ client.on("interactionCreate", async (interaction) => {
     switch (interaction.commandName) {
       case "play":
         play(interaction);
+        break;
+      case "reload":
+        await interaction.reply("어플레케이션을 재시작합니다...");
+        reload();
         break;
     }
   }
