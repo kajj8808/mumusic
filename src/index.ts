@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import { Client, Guild } from "discord.js";
 
 import { searchYoutube } from "../src/lib/youtube";
 
@@ -14,8 +14,9 @@ const client = new Client({
   intents: ["Guilds", "GuildVoiceStates", "GuildMessages"],
 });
 
-client.on("ready", (client) => {
+client.on("ready", async (client) => {
   console.log(`👾 ${client.user.username} is online`);
+  client.guilds.cache.forEach((guild) => discordCommandInit(guild.id));
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -40,7 +41,7 @@ client.on("interactionCreate", async (interaction) => {
         play(interaction);
         break;
       case "reload":
-        await interaction.reply("어플레케이션을 재시작합니다...");
+        await interaction.reply("애플리케이션을 재시작합니다...");
         reload();
         break;
     }
@@ -61,8 +62,6 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 async function main() {
-  // command init은 시간이 오래걸리기에 개발 중에는 비활성화.
-  // await discordCommandInit();
   client.login(process.env.DISCORD_BOT_TOKEN);
 }
 main();

@@ -20,11 +20,10 @@ async function getCommands() {
   return commands;
 }
 
-export async function discordCommandInit() {
+export async function discordCommandInit(guildId: string) {
   const botToken = process.env.DISCORD_BOT_TOKEN;
   const clientId = process.env.DISCORD_CLIENT_ID;
-  const serverId = process.env.DISCORD_SERVER_ID;
-  if (!botToken || !clientId || !serverId) {
+  if (!botToken || !clientId) {
     console.error(
       ".env 파일에[DISCORD_BOT_TOKEN , DISCORD_CLIENT_ID , DISCORD_SERVER_ID]값에 문제가 있는듯 합니다. command 업데이트를 종료합니다.😥"
     );
@@ -35,7 +34,7 @@ export async function discordCommandInit() {
   console.log(
     `Started refreshing ${commands.length} application (/) commands.`
   );
-  await rest.put(Routes.applicationGuildCommands(clientId, serverId), {
+  await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
     body: commands,
   });
   console.log(
