@@ -16,7 +16,6 @@ export async function getProminentColorHexCode(imageUrl: string) {
   } catch (error) {
     console.log(error);
   }
-
   return hexCode ?? "#1f1f1f";
 }
 export function formatSecondsToMinutes(seconds: string) {
