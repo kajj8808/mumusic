@@ -161,7 +161,7 @@ async function playSong(guildId: string, voiceChannelId: string) {
     return;
   }
 
-  const songInfo = currentAudioPlayer.playList.pop();
+  const songInfo = currentAudioPlayer.playList.shift();
   if (!songInfo) {
     console.error("재생할 노래가 없습니다.");
     return;
