@@ -27,6 +27,7 @@ import { playlistButton } from "../buttons/playlist";
 import { searchYoutube } from "../lib/youtube";
 import { formatSecondsToMinutes } from "../lib/utils";
 import { stopButton } from "../buttons/stop";
+import { exec } from "child_process";
 
 interface SongInfo {
   videoTitle: string;
@@ -256,23 +257,20 @@ async function convertVideoToAudio(videoPath: string, audioPath: string) {
         tempAudioPath = `${tempAudioPath}.webm`;
       }
 
-      ffmpeg()
-        .input(videoPath)
-        .output(tempAudioPath)
-        .outputOption("-vn")
-        .audioBitrate("128k")
-        .on("end", () => {
-          fs.rmSync(videoPath);
-          fs.renameSync(tempAudioPath, audioPath);
-          resolve(true);
-        })
-        .on("error", (error) => {
-          reject({
+      const ffmpegCommand = `ffmpeg -i "${videoPath}" -vn -ab 128k "${tempAudioPath}"`;
+
+      exec(ffmpegCommand, (error, stdout, stderr) => {
+        if (error) {
+          console.error(`실행 오류: ${error}`);
+          return reject({
             name: `convertVideoToAudio error ${error}`,
             error: error,
           });
-        })
-        .run();
+        }
+        fs.rmSync(videoPath);
+        fs.renameSync(tempAudioPath, audioPath);
+        resolve(true);
+      });
     });
   });
 }
