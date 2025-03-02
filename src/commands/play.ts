@@ -408,7 +408,7 @@ export async function play(interaction: Interaction) {
   const songInfo: SongInfo = {
     audioPath: audioFilePath,
     channelName: videoInfo.videoDetails.author.name,
-    thumbnail: getOriginalThumnail(videoInfo.videoDetails.thumbnail.thumbnails),
+    thumbnail: getOriginalThumnail(videoInfo.videoDetails.thumbnails),
     videoTitle: videoInfo.videoDetails.title,
     videoUrl: videoInfo.videoDetails.video_url,
     duration: videoInfo.videoDetails.lengthSeconds,
